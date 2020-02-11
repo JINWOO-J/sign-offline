@@ -26,7 +26,7 @@ def kvPrint(key,value,color="yellow"):
     print(bcolors.WARNING + "{:>{key_value}} ".format(str(value), key_value=key_value) + bcolors.ENDC)
 
 
-def generateTX(file, password, icx_value, to_addr, api_url, is_send):
+def generateTX(file, password, icx_value, to_addr, nid, api_url, is_send):
     step_limit = 1000000
     value = int(icx_value *10 ** 18)
     # kvPrint("value", f"{value:,}")
@@ -36,7 +36,7 @@ def generateTX(file, password, icx_value, to_addr, api_url, is_send):
         .from_(owner_from_addr) \
         .to(to_addr) \
         .step_limit(step_limit) \
-        .nid(80) \
+        .nid(int(nid)) \
         .nonce(100) \
         .value(value) \
         .build()
@@ -67,12 +67,10 @@ def generateWallet(file, password):
 
 def get_parser():
     parser = argparse.ArgumentParser(description='Generate Transaction')
-    parser.add_argument(
-    'command',
-    help='gentx, genwallet')
+    parser.add_argument( 'command', help='gentx, genwallet')
     parser.add_argument('--url', metavar='url', help=f'Endpoint url', default="https://zicon.net.solidwallet.io")
     parser.add_argument('--is-send', metavar='is_send', help=f'is-send, True/False', default=False)
-    parser.add_argument('--nid', metavar='nid', help=f'Network ID', default="80")
+    parser.add_argument('--nid', metavar='nid', type=int, help=f'Network ID', default=80)
     parser.add_argument('--value', metavar='value', type=float, help=f'icx amount', default=0.1)
     parser.add_argument('-to', '--to-addr', metavar='to_addr', default=None, help=f'to address. default: None')
     parser.add_argument('-f', '--keystore-file', metavar='keystore-file', default=None, help=f'keystore filename. default: None')
@@ -91,11 +89,12 @@ def main():
             password=args.password,
             icx_value=args.value,
             to_addr=args.to_addr,
+            nid=args.nid,
             api_url=args.url,
             is_send=args.is_send,
         )
     elif args.command == "genwallet":
-        print("====== Generates a wallet ======")
+        print("====== Generate a wallet ======")
         kvPrint("keystore-file", args.keystore_file)
         kvPrint("password", args.password)
         generateWallet(args.keystore_file, args.password)
