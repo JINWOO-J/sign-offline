@@ -8,6 +8,7 @@ from iconsdk.providers.http_provider import HTTPProvider
 from iconsdk.signed_transaction import SignedTransaction
 from iconsdk.wallet.wallet import KeyWallet
 import argparse
+import json
 
 
 def kvPrint(key,value,color="yellow"):
@@ -40,14 +41,15 @@ def generateTX(file, password, icx_value, to_addr, nid, api_url, is_send):
         .nonce(100) \
         .value(value) \
         .build()
-    signed_data = SignedTransaction(transaction, wallet)
-    kvPrint("signed_data", signed_data.signed_transaction_dict)
-    kvPrint("convert_tx_to_jsonrpc_request", signed_data.convert_tx_to_jsonrpc_request(transaction, wallet))
+    signed_params = SignedTransaction(transaction, wallet)
+    signed_payload = {'jsonrpc': '2.0', 'method': "icx_sendTransaction", 'id': 1234, "params": signed_params.signed_transaction_dict}
+    kvPrint("signed_payload", json.dumps(signed_payload, indent=4, sort_keys=True))
+    # kvPrint("convert_tx_to_jsonrpc_request", signed_data.convert_tx_to_jsonrpc_request(transaction, wallet))
     if is_send:
         print("===== send tx =====")
         PROVIDER = HTTPProvider(f"{api_url}/api/v3")
         ICON_SERVICE = IconService(PROVIDER)
-        tx_hash = ICON_SERVICE.send_transaction(signed_data)
+        tx_hash = ICON_SERVICE.send_transaction(signed_params)
         kvPrint(f"{file},  sendTX() txResult" , tx_hash)
 
 
@@ -70,7 +72,7 @@ def get_parser():
     parser.add_argument( 'command', help='gentx, genwallet')
     parser.add_argument('--url', metavar='url', help=f'Endpoint url', default="https://zicon.net.solidwallet.io")
     parser.add_argument('--is-send', metavar='is_send', help=f'is-send, True/False', default=False)
-    parser.add_argument('--nid', metavar='nid', type=int, help=f'Network ID', default=80)
+    parser.add_argument('--nid', metavar='nid', type=int, help=f'Network ID MainNet: 1, TestNet: 2, zicon: 80 ', default=80)
     parser.add_argument('--value', metavar='value', type=float, help=f'icx amount', default=0.1)
     parser.add_argument('-to', '--to-addr', metavar='to_addr', default=None, help=f'to address. default: None')
     parser.add_argument('-f', '--keystore-file', metavar='keystore-file', default=None, help=f'keystore filename. default: None')
