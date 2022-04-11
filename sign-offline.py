@@ -3,15 +3,16 @@
 
 from iconsdk.icon_service import IconService
 from iconsdk.builder.transaction_builder import CallTransactionBuilder, TransactionBuilder
-from iconsdk.builder.call_builder import CallBuilder
 from iconsdk.providers.http_provider import HTTPProvider
 from iconsdk.signed_transaction import SignedTransaction
 from iconsdk.wallet.wallet import KeyWallet
 import argparse
 import json
 
+from iconsdk.libs.serializer import generate_message
 
-def kvPrint(key,value,color="yellow"):
+
+def kvPrint(key, value, color="yellow"):
     class bcolors:
         HEADER = '\033[95m'
         OKBLUE = '\033[94m'
@@ -27,10 +28,9 @@ def kvPrint(key,value,color="yellow"):
     print(bcolors.WARNING + "{:>{key_value}} ".format(str(value), key_value=key_value) + bcolors.ENDC)
 
 
-def generateTX(file, password, icx_value, to_addr, nid, api_url, is_send):
+def generate_tx(file, password, icx_value, to_addr, nid, api_url, is_send):
     step_limit = 1000000
-    value = int(icx_value *10 ** 18)
-    # kvPrint("value", f"{value:,}")
+    value = int(icx_value * 10 ** 18)
     wallet = KeyWallet.load(file, password)
     owner_from_addr = wallet.get_address()
     transaction = TransactionBuilder() \
@@ -43,24 +43,27 @@ def generateTX(file, password, icx_value, to_addr, nid, api_url, is_send):
         .build()
     signed_params = SignedTransaction(transaction, wallet)
     signed_payload = {'jsonrpc': '2.0', 'method': "icx_sendTransaction", 'id': 1234, "params": signed_params.signed_transaction_dict}
-    kvPrint("signed_payload", json.dumps(signed_payload, indent=4, sort_keys=True))
-    # kvPrint("convert_tx_to_jsonrpc_request", signed_data.convert_tx_to_jsonrpc_request(transaction, wallet))
+    kvPrint("[before] signed_payload", json.dumps(signed_payload, indent=4, sort_keys=True))
+    kvPrint("[before] calculate the tx_hash", f"0x{generate_message(signed_params.signed_transaction_dict)}")
+
     if is_send:
         print("===== send tx =====")
-        PROVIDER = HTTPProvider(f"{api_url}/api/v3")
-        ICON_SERVICE = IconService(PROVIDER)
-        tx_hash = ICON_SERVICE.send_transaction(signed_params)
-        kvPrint(f"{file},  sendTX() txResult" , tx_hash)
+        provider = HTTPProvider(f"{api_url}/api/v3")
+        icon_service = IconService(provider)
+        tx_hash = icon_service.send_transaction(signed_params)
+        kvPrint(f"[after]  sendTX() txResult", tx_hash)
+
+    return signed_payload
 
 
-def generateWallet(file, password):
+def generate_wallet(file, password):
     from iconsdk.wallet.wallet import KeyWallet
     # Generates a wallet
     wallet = KeyWallet.create()
     # Loads a wallet from a keystore file
     # wallet = KeyWallet.load("./keystore.json", "password")
     # # Stores a keystore file on the file path
-    wallet.store(file, password) # throw exception if having an error.
+    wallet.store(file, password)  # throw exception if having an error.
     # Returns an Address
     kvPrint("wallet address", wallet.get_address())
     # Returns a private key
@@ -69,10 +72,10 @@ def generateWallet(file, password):
 
 def get_parser():
     parser = argparse.ArgumentParser(description='Generate Transaction')
-    parser.add_argument( 'command', help='gentx, genwallet')
-    parser.add_argument('--url', metavar='url', help=f'Endpoint url', default="https://zicon.net.solidwallet.io")
+    parser.add_argument('command', help='gentx, genwallet')
+    parser.add_argument('--url', metavar='url', help=f'Endpoint url', default="https://sejong.net.solidwallet.io")
     parser.add_argument('--is-send', metavar='is_send', help=f'is-send, True/False', default=False)
-    parser.add_argument('--nid', metavar='nid', type=int, help=f'Network ID MainNet: 1, TestNet: 2, zicon: 80 ', default=80)
+    parser.add_argument('--nid', metavar='nid', type=int, help=f'Network ID MainNet: 1, TestNet: 2, sejong: 83 ', default=83)
     parser.add_argument('--value', metavar='value', type=float, help=f'icx amount', default=0.1)
     parser.add_argument('-to', '--to-addr', metavar='to_addr', default=None, help=f'to address. default: None')
     parser.add_argument('-f', '--keystore-file', metavar='keystore-file', default=None, help=f'keystore filename. default: None')
@@ -86,7 +89,7 @@ def main():
 
     if args.command == "gentx":
         print("====== Generate a Transaction ======")
-        generateTX(
+        generate_tx(
             file=args.keystore_file,
             password=args.password,
             icx_value=args.value,
@@ -99,7 +102,7 @@ def main():
         print("====== Generate a wallet ======")
         kvPrint("keystore-file", args.keystore_file)
         kvPrint("password", args.password)
-        generateWallet(args.keystore_file, args.password)
+        generate_wallet(args.keystore_file, args.password)
 
 
 if __name__ == '__main__':

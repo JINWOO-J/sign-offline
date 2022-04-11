@@ -1,2 +1,2 @@
-iconsdk==1.2.0
+iconsdk==2.0.0
 argparse
