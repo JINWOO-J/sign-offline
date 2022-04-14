@@ -8,8 +8,13 @@ from iconsdk.signed_transaction import SignedTransaction
 from iconsdk.wallet.wallet import KeyWallet
 import argparse
 import json
+import time
 
-from iconsdk.libs.serializer import generate_message
+from iconsdk.libs.serializer import generate_message, serialize
+
+
+def current_milli_time():
+    return round(time.time() * 1000)
 
 
 def kvPrint(key, value, color="yellow"):
@@ -28,7 +33,7 @@ def kvPrint(key, value, color="yellow"):
     print(bcolors.WARNING + "{:>{key_value}} ".format(str(value), key_value=key_value) + bcolors.ENDC)
 
 
-def generate_tx(file, password, icx_value, to_addr, nid, api_url, is_send):
+def generate_tx(file, password, icx_value, to_addr, nid, api_url, is_send, timestamp):
     step_limit = 1000000
     value = int(icx_value * 10 ** 18)
     wallet = KeyWallet.load(file, password)
@@ -40,6 +45,7 @@ def generate_tx(file, password, icx_value, to_addr, nid, api_url, is_send):
         .nid(int(nid)) \
         .nonce(100) \
         .value(value) \
+        .timestamp(timestamp)\
         .build()
     signed_params = SignedTransaction(transaction, wallet)
     signed_payload = {'jsonrpc': '2.0', 'method': "icx_sendTransaction", 'id': 1234, "params": signed_params.signed_transaction_dict}
@@ -80,6 +86,7 @@ def get_parser():
     parser.add_argument('-to', '--to-addr', metavar='to_addr', default=None, help=f'to address. default: None')
     parser.add_argument('-f', '--keystore-file', metavar='keystore-file', default=None, help=f'keystore filename. default: None')
     parser.add_argument('-p', '--password', metavar='password', default=None, help=f'keystore\'s password default: None')
+    parser.add_argument('-a', '--after-min', metavar='after-min', default=None, help=f'after minutes')
     return parser
 
 
@@ -89,6 +96,11 @@ def main():
 
     if args.command == "gentx":
         print("====== Generate a Transaction ======")
+        after_min = None
+        if args.after_min:
+            after_min = current_milli_time() + int(args.after_min) * 1000 * 60
+            print(f"Now: {current_milli_time()}, After {args.after_min} min : {after_min}")
+
         generate_tx(
             file=args.keystore_file,
             password=args.password,
@@ -97,6 +109,7 @@ def main():
             nid=args.nid,
             api_url=args.url,
             is_send=args.is_send,
+            timestamp=after_min
         )
     elif args.command == "genwallet":
         print("====== Generate a wallet ======")
