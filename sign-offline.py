@@ -17,6 +17,15 @@ def current_milli_time():
     return round(time.time() * 1000)
 
 
+def str2bool(v):
+    if type(v) == bool:
+        return v
+    elif type(v) == str:
+        return v.lower() in ("yes", "true", "t", "1", "True", "TRUE")
+    else:
+        return eval(f"{v}") in ("yes", "true", "t", "1", "True", "TRUE")
+
+
 def kvPrint(key, value, color="yellow"):
     class bcolors:
         HEADER = '\033[95m'
@@ -80,7 +89,7 @@ def get_parser():
     parser = argparse.ArgumentParser(description='Generate Transaction')
     parser.add_argument('command', help='gentx, genwallet')
     parser.add_argument('--url', metavar='url', help=f'Endpoint url', default="https://sejong.net.solidwallet.io")
-    parser.add_argument('--is-send', metavar='is_send', help=f'is-send, True/False', default=False)
+    parser.add_argument('--is-send', metavar='is_send', type=str2bool, help=f'is-send, True/False', default=False)
     parser.add_argument('--nid', metavar='nid', type=int, help=f'Network ID MainNet: 1, TestNet: 2, sejong: 83 ', default=83)
     parser.add_argument('--value', metavar='value', type=float, help=f'icx amount', default=0.1)
     parser.add_argument('-to', '--to-addr', metavar='to_addr', default=None, help=f'to address. default: None')
